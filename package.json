@@ -3,6 +3,8 @@
   "description": "Multi task/event calendar component",
   "main": "mte-calendar.js",
   "dependencies": {
+    "@polymer/iron-icons": "^3.0.1",
+    "@polymer/paper-button": "^3.0.1",
     "@polymer/polymer": "^3.0.0"
   },
   "devDependencies": {
