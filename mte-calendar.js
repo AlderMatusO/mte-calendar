@@ -27,9 +27,7 @@ class MteCalendar extends PolymerElement {
       weekdays: {
         type: Array,
         value() {
-          return [
-            'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
-          ]
+          return [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' ]
         }
       },
       selected_month: {
@@ -43,8 +41,7 @@ class MteCalendar extends PolymerElement {
         computed: 'getHeaderTitle(selected_month,selected_year)'
       },
       displayed_days: {
-        type: Object,
-        computed: 'getDisplayedDaysObj(selected_month,selected_year)'
+        type: Object
       }
     };
   }
@@ -59,10 +56,8 @@ class MteCalendar extends PolymerElement {
 
   ready() {
     super.ready();
-    console.log(this.largeDevice);
-    this.weekdays.forEach( (item) => {
-      console.log(item.substring(0,2));
-    });
+
+    console.log(this.displayed_days);
   }
 
   static get template() {
@@ -73,6 +68,10 @@ class MteCalendar extends PolymerElement {
           --calendar-header-bkgnd: #FF675C;
           --calendar-header-forecolor: #fff8f7;
           --calendar-borders-color: #9c9a9b;
+          --calendar-disabled-color: #ebebeb;
+          --calendar-disabled-forecolor: #a8a8a8;
+          --calendar-primary-selection-color: #519aed;
+          --calendar-secondary-selection-color: #6fe657; 
         }
 
         .header {
@@ -126,36 +125,42 @@ class MteCalendar extends PolymerElement {
         .tag {
           color: #4FC8ED;
           font-size: 8px;
+          font-weight: bold;
         }
 
         .day {
-          font-size: 16px;
           border-style: dotted;
           border-width: 1px;
         }
+        .day-tag {
+          width: 35px;
+          height: 35px;
+          border-radius: 50%;
+          border-style: none;
+          border-width: 1px;
+          font-size: 18px;
+        }
 
-        .grid-item {
+        .grid-item, .grid-item > div {
           display: flex;
           align-items: center;
           justify-content: center;
         }
 
-        .sunday-shadow,.saturday-shadow {
-          position: absolute;
-          height: 97%;
-          width: 14%;
-          top: 0.2%;
-          background-color: #FFDD30;
-          opacity: 0.3;
-          z-index: 2;
+        .disabled {
+          background-color: var(--calendar-disabled-color);
+          color: var(--calendar-disabled-forecolor);
         }
 
-        .sunday-shadow {
-          left: 1.4%;
+        #today > .day-tag {
+          border-style: dashed;
+          background-color: var(--calendar-secondary-selection-color);
+          color: white;
         }
-        
-        .saturday-shadow {
-          left: 84%;
+
+        .selected {
+          background-color: var(--calendar-primary-selection-color);
+          color: white;
         }
 
         @media(min-width: 425px)
@@ -192,31 +197,29 @@ class MteCalendar extends PolymerElement {
       <iron-media-query query="(min-width: 768px)" query-matches="{{largeDevice}}"></iron-media-query>
       <div class="calendar">
         <div class="header">
-          <paper-button id="previous" on-click="move_backward">
+          <paper-button id="previous" on-click="_moveBackward">
             <iron-icon icon="chevron-left"></iron-icon>
           </paper-button>
           
           <div class="title">[[header_title]]</div>
 
-          <paper-button id="next" on-click="move_forward">
+          <paper-button id="next" on-click="_moveForward">
             <iron-icon icon="chevron-right"></iron-icon>
           </paper-button>
-          
         </div>
 
         <div class="body">
-          <div class="sunday-shadow"></div>
-          <div class="saturday-shadow"></div>
           <div class="grid-container">
-            <template is="dom-repeat" items="[[weekdays]]">
-              <div class="tag grid-item">
-                <template is="dom-if" if="[[largeDevice]]">[[item]]</template>
-                <template is="dom-if" if="[[!largeDevice]]">[[weekdayAbbr(item)]]</template>
+            <template is="dom-repeat" items="[[weekdays]]" as="weekday">
+              <div class$="tag grid-item[[defineWeekdayDisabled(index)]]">
+                <template is="dom-if" if="[[largeDevice]]">[[weekday]]</template>
+                <template is="dom-if" if="[[!largeDevice]]">[[weekdayAbbr(weekday)]]</template>
               </div>
             </template>
-            <template is="dom-repeat" items="[[displayed_days]]">
-              <div class="day grid-item">
-                [[item]]
+            <template is="dom-repeat" items="[[displayed_days]]" as="displayed_day">
+              <div id="[[displayed_day.el_id]]" class$="[[displayed_day.el_classes]]"
+                on-click="_selectDate" aria-label$="[[index]]">
+                <div class="day-tag">[[displayed_day.n_day]]</div>
               </div>
             </template>
           </div>
@@ -224,31 +227,64 @@ class MteCalendar extends PolymerElement {
       </div>
     `;
   }
+
+  static get observers() {
+    return [
+      'calendarSelectedChanged(selected_month, selected_year)'
+    ];
+  }
   
   getHeaderTitle(month, year) {
     return this.strfiedMonths[month] + ' '+ year;
   }
 
   getDisplayedDaysObj(month,year) {
+    let today = new Date();
+    today.setHours(0,0,0,0);
+    let firstDay = new Date(year, month, 1);
+    let weekDay = firstDay.getDay();
+    let _date = firstDay.DateAdd("d", -weekDay);
 
-    let curMonthLastD = new Date(year, (month < 11 ? month + 1 : 0), 0);
-    let firstWeekday = new Date(year, month, 1).getDay();
-    let len_prevMonth = new Date(year, month, 0).getDate();
+    let displayDaysArr = [];
+    for(let i=0; i<35; i++) {
+      let properties = ['day', 'grid-item'];
+      if(! (_date.getMonth() == month && _date.getDay() > 0 && _date.getDay() < 6))
+        properties.push('disabled');
 
-    let prevMonthDaysArr = [];
-    for(let i = len_prevMonth - (firstWeekday - 1); i <= len_prevMonth; i++ )
-      prevMonthDaysArr.push(i);
+      displayDaysArr.push({
+        n_day : _date.getDate(),
+        el_id: (today.getTime() === _date.getTime())? "today" : "",
+        el_classes : properties.join(" "),
+      });
 
-    return Array.prototype.concat(prevMonthDaysArr, new Array(curMonthLastD.getDate())
-    .fill(undefined).map((_, i) => i + 1));
+      _date = _date.DateAdd("d", 1);
+    }
+    return displayDaysArr;
   }
 
-  move_forward(eventArgs) {
+  _moveForward(eventArgs) {
     this.change_month("add");
   }
   
-  move_backward(eventArgs) {
+  _moveBackward(eventArgs) {
     this.change_month("substract");
+  }
+
+  _selectDate(eventArgs) {
+    let selection = eventArgs.target;
+    if(selection.getAttribute("class") == "day-tag")
+      selection = selection.parentNode;
+
+    let index = selection.getAttribute("aria-label");
+
+    let classes = this.displayed_days[index].el_classes.split(" ");
+    if(classes.includes("disabled"))
+      return;
+    if(classes.includes("selected"))
+      classes.splice(classes.indexOf("selected"), 1);
+    else
+      classes.push("selected");
+    this.set('displayed_days.'+index+'.el_classes', classes.join(" "));
   }
 
   change_month(operation) {
@@ -275,6 +311,62 @@ class MteCalendar extends PolymerElement {
   weekdayAbbr( weekday ) {
     return weekday.substring(0,2);
   }
+
+  defineWeekdayDisabled(weekday) {
+      return weekday > 0 && weekday < 6? "" : " disabled";
+  }
+  
+  calendarSelectedChanged(selected_month, selected_year) {
+    this.set('displayed_days', this.getDisplayedDaysObj(selected_month,selected_year));
+  }
 }
+
+Object.defineProperty(Date.prototype, "DateAdd", {
+  value: function DateAdd(interval, num) {
+    let result = new Date(this.getTime());
+    if(num == 0)
+      return result;
+
+    switch(interval) {
+      case "d":
+      case "D": {//Days
+        result.setDate(result.getDate() + num)
+        break;
+      }
+      case "w":
+      case "W": {//Weekdays
+        let i = Math.abs(num);
+        let step = num > 0? 1 : -1;
+        while(i > 0) {
+          result.setDate(result.getDate() + step);
+          let weekday = result.getDay();
+          if(weekday > 0 && weekday < 6)
+            i--;
+        }
+        break;
+      }
+      case "ww":
+      case "WW": {
+        result.setDate(result.getDate() + num * 7);
+        break;
+      }
+      case "m":
+      case "M": {
+        let month = result.getMonth() + num;
+        result = new Date(result.getFullYear(), month, result.getDate(), result.getHours(), result.getMinutes(), result.getSeconds());
+        break;
+      }
+      case "y":
+      case "Y": {
+        let year = result.getFullYear() + num;
+        result = new Date(year, result.getMonth(), result.getDate(), result.getHours(), result.getMinutes(), result.getSeconds());
+        break;
+      }
+    }
+    return result;
+  },
+  writable: true,
+  configurable: true
+});
 
 window.customElements.define('mte-calendar', MteCalendar);
