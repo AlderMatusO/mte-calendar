@@ -41,7 +41,8 @@ class MteCalendar extends PolymerElement {
         computed: 'getHeaderTitle(selected_month,selected_year)'
       },
       displayed_days: {
-        type: Object
+        type: Object,
+        computed: 'getDisplayedDaysObj(selected_month,selected_year)'
       }
     };
   }
@@ -227,12 +228,6 @@ class MteCalendar extends PolymerElement {
       </div>
     `;
   }
-
-  static get observers() {
-    return [
-      'calendarSelectedChanged(selected_month, selected_year)'
-    ];
-  }
   
   getHeaderTitle(month, year) {
     return this.strfiedMonths[month] + ' '+ year;
@@ -314,10 +309,6 @@ class MteCalendar extends PolymerElement {
 
   defineWeekdayDisabled(weekday) {
       return weekday > 0 && weekday < 6? "" : " disabled";
-  }
-  
-  calendarSelectedChanged(selected_month, selected_year) {
-    this.set('displayed_days', this.getDisplayedDaysObj(selected_month,selected_year));
   }
 }
 
