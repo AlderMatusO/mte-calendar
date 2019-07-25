@@ -57,8 +57,6 @@ class MteCalendar extends PolymerElement {
 
   ready() {
     super.ready();
-
-    console.log(this.displayed_days);
   }
 
   static get template() {
@@ -73,6 +71,14 @@ class MteCalendar extends PolymerElement {
           --calendar-disabled-forecolor: #a8a8a8;
           --calendar-primary-selection-color: #519aed;
           --calendar-secondary-selection-color: #6fe657; 
+        }
+
+        :host > * {
+          -moz-user-select: none; /* Firefox */
+          -ms-user-select: none; /* Internet Explorer */
+          -khtml-user-select: none; /* KHTML browsers (e.g. Konqueror) */
+          -webkit-user-select: none; /* Chrome, Safari, and Opera */
+          -webkit-touch-callout: none; /* Disable Android and iOS callouts*/
         }
 
         .header {
@@ -130,8 +136,8 @@ class MteCalendar extends PolymerElement {
         }
 
         .day {
-          border-style: dotted;
-          border-width: 1px;
+          border-style: ridge;
+          border-width: 0.7px;
         }
         .day-tag {
           width: 35px;
@@ -146,6 +152,14 @@ class MteCalendar extends PolymerElement {
           display: flex;
           align-items: center;
           justify-content: center;
+        }
+        
+        .day:not(.disabled) {
+          cursor: pointer;
+        }
+
+        .day:not(.disabled):not(.selected):hover {
+          background-color: whitesmoke;
         }
 
         .disabled {
