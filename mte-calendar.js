@@ -1,6 +1,10 @@
 import {html, PolymerElement} from '@polymer/polymer/polymer-element.js';
-import '@polymer/paper-button/paper-button.js';
 import '@polymer/iron-icons/iron-icons.js';
+import '@polymer/paper-button/paper-button.js';
+import '@polymer/paper-dropdown-menu/paper-dropdown-menu.js';
+import '@polymer/paper-listbox/paper-listbox.js';
+import '@polymer/paper-item/paper-item.js';
+import '@fooloomanzoo/number-input/integer-input.js';
 import '@polymer/iron-media-query/iron-media-query.js';
 
 /**
@@ -15,6 +19,7 @@ class MteCalendar extends PolymerElement {
   static get properties() {
     return {
       largeDevice: Boolean,
+      displayCalendarSelection: Boolean,
       strfiedMonths: {
         type: Array,
         value() { 
@@ -53,6 +58,7 @@ class MteCalendar extends PolymerElement {
     let today = new Date();
     this.selected_month = today.getMonth();
     this.selected_year = today.getFullYear();
+    this.displayCalendarSelection = false;
   }
 
   ready() {
@@ -70,7 +76,7 @@ class MteCalendar extends PolymerElement {
           --calendar-disabled-color: #ebebeb;
           --calendar-disabled-forecolor: #a8a8a8;
           --calendar-primary-selection-color: #519aed;
-          --calendar-secondary-selection-color: #6fe657; 
+          --calendar-secondary-selection-color: #6fe657;
         }
 
         :host > * {
@@ -97,11 +103,12 @@ class MteCalendar extends PolymerElement {
         }
         
         .title {
+          display: flex;
+          align-items: center;
+          justify-content: center;
           min-width: 60%;
           font-weight: bold;
           font-size: 18px;
-          text-align: center;
-          margin-top: 1.5%;
         }
 
         #previous,#next {
@@ -178,6 +185,24 @@ class MteCalendar extends PolymerElement {
           color: white;
         }
 
+        .labels-container {
+          border-style: solid;
+          border-width: 0.7px;
+          border-radius: 4px;
+          margin-top: 5%;
+        }
+
+        .controls {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+        }
+
+        .controls > * {
+          height: 75%;
+        }
+
         @media(min-width: 425px)
         {
           .header {
@@ -189,7 +214,6 @@ class MteCalendar extends PolymerElement {
           .title {
             min-width: 80%;
             font-size: 24px;
-            margin-top: 3%;
           }
 
           #previous,#next {
@@ -207,20 +231,39 @@ class MteCalendar extends PolymerElement {
             height: 25px;
           }
         }
-
+        
       </style>
       <iron-media-query query="(min-width: 768px)" query-matches="{{largeDevice}}"></iron-media-query>
       <div class="calendar">
         <div class="header">
-          <paper-button id="previous" on-click="_moveBackward">
-            <iron-icon icon="chevron-left"></iron-icon>
-          </paper-button>
-          
-          <div class="title">[[header_title]]</div>
 
-          <paper-button id="next" on-click="_moveForward">
-            <iron-icon icon="chevron-right"></iron-icon>
-          </paper-button>
+          <template is="dom-if" if="[[displayCalendarSelection]]">
+            <div class="controls">
+              <paper-dropdown-menu id="month-selector">
+                <paper-listbox slot="dropdown-content" class="dropdown-content" selected="{{selected_month}}">
+                  <template is="dom-repeat" items="[[strfiedMonths]]" as="month">
+                    <paper-item>[[month]]</paper-item>
+                  </template>
+                </paper-listbox>
+              </paper-dropdown-menu>
+              <integer-input input="{{selected_year}}" step="1"></integer-input>
+              <paper-button raised on-tap="_toggleCalendarSelection">
+                <iron-icon icon="done"></iron-icon>
+              </paper-button>
+            </div>
+          </template>
+          <template is="dom-if" if="[[!displayCalendarSelection]]">
+            <paper-button id="previous" on-tap="_moveBackward">
+              <iron-icon icon="chevron-left"></iron-icon>
+            </paper-button>
+
+            <div class="title" on-tap="_toggleCalendarSelection">[[header_title]]</div>
+
+            <paper-button id="next" on-tap="_moveForward">
+              <iron-icon icon="chevron-right"></iron-icon>
+            </paper-button>
+          </template>
+
         </div>
 
         <div class="body">
@@ -233,11 +276,14 @@ class MteCalendar extends PolymerElement {
             </template>
             <template is="dom-repeat" items="[[displayed_days]]" as="displayed_day">
               <div id="[[displayed_day.el_id]]" class$="[[displayed_day.el_classes]]"
-                on-click="_selectDate" aria-label$="[[index]]">
+                on-tap="_selectDate" aria-label$="[[index]]">
                 <div class="day-tag">[[displayed_day.n_day]]</div>
               </div>
             </template>
           </div>
+        </div>
+
+        <div class="labels-container">
         </div>
       </div>
     `;
@@ -294,6 +340,10 @@ class MteCalendar extends PolymerElement {
     else
       classes.push("selected");
     this.set('displayed_days.'+index+'.el_classes', classes.join(" "));
+  }
+
+  _toggleCalendarSelection(eventArgs) {
+    this.displayCalendarSelection = !this.displayCalendarSelection;
   }
 
   change_month(operation) {
