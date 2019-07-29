@@ -1,10 +1,11 @@
 import {html, PolymerElement} from '@polymer/polymer/polymer-element.js';
 import '@polymer/iron-icons/iron-icons.js';
+import '@polymer/paper-input/paper-input.js'
 import '@polymer/paper-button/paper-button.js';
-import '@polymer/paper-dropdown-menu/paper-dropdown-menu.js';
+import '@polymer/paper-dropdown-menu/paper-dropdown-menu-light.js';
 import '@polymer/paper-listbox/paper-listbox.js';
 import '@polymer/paper-item/paper-item.js';
-import '@fooloomanzoo/number-input/integer-input.js';
+import 'web-animations-js/web-animations.min.js';
 import '@polymer/iron-media-query/iron-media-query.js';
 
 /**
@@ -77,6 +78,32 @@ class MteCalendar extends PolymerElement {
           --calendar-disabled-forecolor: #a8a8a8;
           --calendar-primary-selection-color: #519aed;
           --calendar-secondary-selection-color: #6fe657;
+
+          /* no underline */
+          --paper-dropdown-menu-input: {
+            font-size: 14px;
+            padding: 0;
+            font-weight: bold;
+            color: var(--calendar-header-forecolor);
+            border-bottom: none;
+          };
+          --paper-dropdown-menu-icon: {
+            border-color: var(--calendar-header-forecolor);
+            color: var(--calendar-header-forecolor);
+          };
+          --paper-dropdown-menu-focus-color: var(--calendar-header-forecolor);
+
+          --paper-input-container-input: {
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            color: var(--calendar-header-forecolor);
+            border-bottom: none;
+            padding: 2%;
+          };
+
+          --paper-input-container-underline: { display: none; height: 0; };
+          --paper-input-container-underline-focus: { border-color: var(--calendar-header-forecolor); };
         }
 
         :host > * {
@@ -101,7 +128,12 @@ class MteCalendar extends PolymerElement {
         .header > * {
           color: var(--calendar-header-forecolor);
         }
-        
+
+        #previous,#next {
+          min-width: 20%;
+          margin:0;
+        }
+
         .title {
           display: flex;
           align-items: center;
@@ -109,11 +141,6 @@ class MteCalendar extends PolymerElement {
           min-width: 60%;
           font-weight: bold;
           font-size: 18px;
-        }
-
-        #previous,#next {
-          min-width: 20%;
-          margin:0;
         }
 
         .header paper-button iron-icon {
@@ -193,32 +220,61 @@ class MteCalendar extends PolymerElement {
         }
 
         .controls {
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          height: 100%;
           width: 100%;
+          margin: auto 2% auto 20%;
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
         }
 
-        .controls > * {
-          height: 75%;
+        .controls > paper-dropdown-menu-light {
+          width: 50%;
         }
 
+        .controls > paper-input {
+          width: 30%;
+        }
+
+        #done {
+          min-width: 20%;
+          margin:0;
+        }
+        
         @media(min-width: 425px)
         {
+          :host {
+            --paper-dropdown-menu-input: {
+              font-size: 18px;
+              font-weight: bold;
+              color: var(--calendar-header-forecolor);
+              border-bottom: none;
+            };
+
+            --paper-input-container-input: {
+              font-size: 18px;
+              font-weight: bold;
+              border-radius: 4px;
+              color: var(--calendar-header-forecolor);
+              border-bottom: none;
+              padding: 2%;
+            };
+          }
+
           .header {
             height: 60px;
             padding-top: 5px;
             padding-bottom: 5px;
           }
 
-          .title {
-            min-width: 80%;
-            font-size: 24px;
-          }
-
           #previous,#next {
             min-width: 10%;
             margin:0;
+          }
+
+          .title {
+            min-width: 80%;
+            font-size: 24px;
           }
 
           .day {
@@ -230,8 +286,16 @@ class MteCalendar extends PolymerElement {
             font-size: 12px;
             height: 25px;
           }
+
         }
-        
+
+        @media(min-width: 768px)
+        {
+          .controls {
+            height: 70%;
+            margin: auto 10% auto 35%;
+          }
+        }
       </style>
       <iron-media-query query="(min-width: 768px)" query-matches="{{largeDevice}}"></iron-media-query>
       <div class="calendar">
@@ -239,18 +303,19 @@ class MteCalendar extends PolymerElement {
 
           <template is="dom-if" if="[[displayCalendarSelection]]">
             <div class="controls">
-              <paper-dropdown-menu id="month-selector">
+              <paper-dropdown-menu-light id="month-selector" noink no-animations vertical-offset="60">
                 <paper-listbox slot="dropdown-content" class="dropdown-content" selected="{{selected_month}}">
                   <template is="dom-repeat" items="[[strfiedMonths]]" as="month">
                     <paper-item>[[month]]</paper-item>
                   </template>
                 </paper-listbox>
-              </paper-dropdown-menu>
-              <integer-input input="{{selected_year}}" step="1"></integer-input>
-              <paper-button raised on-tap="_toggleCalendarSelection">
-                <iron-icon icon="done"></iron-icon>
-              </paper-button>
+              </paper-dropdown-menu-light>
+              <paper-input type="number" value="{{selected_year}}" max="9999" no-label-float auto-validate pattern="[0-9]+"></paper-input>
+              
             </div>
+            <paper-button id="done" on-tap="_toggleCalendarSelection">
+              <iron-icon icon="done"></iron-icon>
+            </paper-button>
           </template>
           <template is="dom-if" if="[[!displayCalendarSelection]]">
             <paper-button id="previous" on-tap="_moveBackward">

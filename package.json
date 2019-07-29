@@ -10,7 +10,8 @@
     "@polymer/paper-dropdown-menu": "^3.0.1",
     "@polymer/paper-item": "^3.0.1",
     "@polymer/paper-listbox": "^3.0.1",
-    "@polymer/polymer": "^3.0.0"
+    "@polymer/polymer": "^3.0.0",
+    "web-animations-js": "^2.3.2"
   },
   "devDependencies": {
     "@polymer/iron-demo-helpers": "^3.1.0",
