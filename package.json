@@ -3,15 +3,13 @@
   "description": "Multi task/event calendar component",
   "main": "mte-calendar.js",
   "dependencies": {
-    "@fooloomanzoo/number-input": "^3.0.10",
     "@polymer/iron-icons": "^3.0.1",
     "@polymer/iron-media-query": "^3.0.1",
     "@polymer/paper-button": "^3.0.1",
     "@polymer/paper-dropdown-menu": "^3.0.1",
     "@polymer/paper-item": "^3.0.1",
     "@polymer/paper-listbox": "^3.0.1",
-    "@polymer/polymer": "^3.0.0",
-    "web-animations-js": "^2.3.2"
+    "@polymer/polymer": "^3.0.0"
   },
   "devDependencies": {
     "@polymer/iron-demo-helpers": "^3.1.0",

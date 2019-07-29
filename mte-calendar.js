@@ -5,7 +5,6 @@ import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-dropdown-menu/paper-dropdown-menu-light.js';
 import '@polymer/paper-listbox/paper-listbox.js';
 import '@polymer/paper-item/paper-item.js';
-import 'web-animations-js/web-animations.min.js';
 import '@polymer/iron-media-query/iron-media-query.js';
 
 /**
