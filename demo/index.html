@@ -25,7 +25,10 @@
       <h3>Basic mte-calendar demo</h3>
       <demo-snippet>
         <template>
-          <mte-calendar></mte-calendar>
+          <mte-calendar evt_types='{
+            "PTO": {"color": "#e6af50", "min_date": "today", "max_date":"29-Aug-2019", "restrictWeekdays": true},
+            "Vacations": {"color": "#50e657", "min_date": "today", "max_date":"29-December-2019", "restrictWeekdays": true}
+          }'></mte-calendar>
         </template>
       </demo-snippet>
     </div>
