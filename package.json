@@ -1,5 +1,6 @@
 {
   "name": "mte-calendar",
+  "version": "1.0.0",
   "description": "Multi task/event calendar component",
   "main": "mte-calendar.js",
   "dependencies": {
@@ -18,5 +19,7 @@
     "chai": "^4.2.0",
     "mocha": "^6.1.4",
     "wct-mocha": "^1.0.1"
-  }
+  },
+  "author": "Alder Matus <aldorafael33@hotmail.com>",
+  "license": "MIT"
 }
