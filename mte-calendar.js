@@ -59,10 +59,6 @@ class MteCalendar extends PolymerElement {
           return 'selection'
         }
       },
-      sel_dates: {
-        type: Array,
-        value() { return []; }
-      },
       header_title: {
         type: String,
         computed: 'getHeaderTitle(selected_month,selected_year)'
@@ -478,23 +474,28 @@ class MteCalendar extends PolymerElement {
 
     if(element.el_classes.includes('disabled') || this.displayCalendarSelection /*MODE*/)
       return;
-    
-    let evt_index = this.sel_dates.findIndex((element) => { return element.date == _date && element.evt_type == this.cur_event; });
-    if(evt_index >= 0) {
-      this.splice("sel_dates", evt_index, 1);
 
+    let evt_index = -1;
+    if(!this.evt_types[this.cur_event].hasOwnProperty("dates"))
+      this.evt_types[this.cur_event].dates = [];
+    else
+      evt_index = this.evt_types[this.cur_event].dates.indexOf(_date);
+    if(evt_index >= 0) {  //  Delete selection of current date
+      this.splice("evt_types."+this.cur_event+".dates", evt_index, 1);
       let sel_class_index = element.prop.indexOf('selected');
       element.prop.splice(sel_class_index, 1);
-    } else {
-        let new_event = {
-        date: _date,
-        evt_type: this.cur_event,
-        note: ""  //not supported yet
+    } else {  //  Add selection of current date
+      if(this.evt_types[this.cur_event].condition === undefined ||
+        ( this.evt_types[this.cur_event].condition !== undefined &&
+          this.evt_types[this.cur_event].condition(/*_date,
+            this.evt_types.foreach(evt => {return {evt: this.sel_dates.filter(it => it.evt_type === evt).map(it => it.date)}})*/
+          )
+        )
+      ) {
+        this.push("evt_types."+this.cur_event+".dates", _date);
+
+        element.prop.push('selected');
       }
-
-      this.push("sel_dates", new_event);
-
-      element.prop.push('selected');
     }
 
     this.set("displayed_days."+index+".el_color", this.defineElementColor(element));
@@ -541,18 +542,13 @@ class MteCalendar extends PolymerElement {
 
   defineElementColor(element) {
     let _date = element._date;
-    let sel_dates_month = this.sel_dates.filter((item) => {
-      return (new Date(item.date)).getMonth() == (new Date(_date)).getMonth();
-    });
 
-    let evts_in_date = sel_dates_month.find((item) => {
-      return item.date === _date;
-    });
+    let evt_in_date = this.evtLookUp(_date);
 
     let color = "";
-    if(evts_in_date) {
+    if(evt_in_date) {
       //only displays one event per day atm
-      color = "background-color: " + this.evt_types[evts_in_date.evt_type].color + ";";
+      color = "background-color: " + this.evt_types[evt_in_date].color + ";";
       if(element.el_classes.includes('disabled'))
         color += " opacity: 0.6;";
     }
@@ -575,6 +571,25 @@ class MteCalendar extends PolymerElement {
     if(_date != undefined)
       value = _date.getTime();
 
+    return value;
+  }
+
+  /**
+   * Given a date in calendar looks for the event attached if any
+   */
+  evtLookUp(_date) {
+    let keys = Object.keys(this.evt_types);
+    let value = undefined;
+    let i = 0;
+    while(value === undefined && i < keys.length)
+    {
+      let key = keys[i];
+      if(this.evt_types[key].hasOwnProperty("dates") &&
+        this.evt_types[key].dates.includes(_date)) {
+        value = key;
+      }
+      i++;
+    }
     return value;
   }
 }
