@@ -471,26 +471,31 @@ class MteCalendar extends PolymerElement {
     
     let index = this.displayed_days.findIndex((el) => { return el._date == _date; })
     let element = this.displayed_days[index];
-
-    if(element.el_classes.includes('disabled') || this.displayCalendarSelection /*MODE*/)
-      return;
-
+    //  Gets the index in the current event's array
     let evt_index = -1;
     if(!this.evt_types[this.cur_event].hasOwnProperty("dates"))
       this.evt_types[this.cur_event].dates = [];
     else
       evt_index = this.evt_types[this.cur_event].dates.indexOf(_date);
+
+    // Does nothing if the element is disabled, if it's selected but not for the current event or
+    // if the whole component was put in calendar selection mode.
+    if(element.el_classes.includes('disabled') ||
+    (element.el_classes.includes('selected') && evt_index < 0) || this.displayCalendarSelection)
+      return;
+
     if(evt_index >= 0) {  //  Delete selection of current date
       this.splice("evt_types."+this.cur_event+".dates", evt_index, 1);
       let sel_class_index = element.prop.indexOf('selected');
       element.prop.splice(sel_class_index, 1);
     } else {  //  Add selection of current date
-      if(this.evt_types[this.cur_event].condition === undefined ||
-        ( this.evt_types[this.cur_event].condition !== undefined &&
-          this.evt_types[this.cur_event].condition(/*_date,
-            this.evt_types.foreach(evt => {return {evt: this.sel_dates.filter(it => it.evt_type === evt).map(it => it.date)}})*/
-          )
-        )
+      var dates_per_event = new Object();
+      Object.keys(this.evt_types).forEach((key) => {
+        dates_per_event[key] = (this.evt_types[key].hasOwnProperty("dates")? this.evt_types[key].dates : []);
+      });
+      if(!this.evt_types[this.cur_event].hasOwnProperty("validation") || this.evt_types[this.cur_event].validation === undefined ||
+        ( this.evt_types[this.cur_event].hasOwnProperty("validation") && this.evt_types[this.cur_event].validation !== undefined &&
+          this.evt_types[this.cur_event].validation(_date, dates_per_event) )
       ) {
         this.push("evt_types."+this.cur_event+".dates", _date);
 
@@ -554,11 +559,7 @@ class MteCalendar extends PolymerElement {
     }
     return color;
   }
-  // static set current_evt(evt_type) {
-  //   let evt_name = evt_type.ToLowerCase();
-  //   if(Object.keys(evt_type).contains(evt_name))
-  //     this.cur_event = evt_name;
-  // }
+  
   parseDate(str) {
     var _date;
     if(str == 'today')
