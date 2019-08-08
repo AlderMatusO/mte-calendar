@@ -488,6 +488,8 @@ class MteCalendar extends PolymerElement {
       this.splice("evt_types."+this.cur_event+".dates", evt_index, 1);
       let sel_class_index = element.prop.indexOf('selected');
       element.prop.splice(sel_class_index, 1);
+
+      this.dispatchEvent(new CustomEvent("date_attached", {detail:{which: _date, evt: this.cur_event}}));
     } else {  //  Add selection of current date
       var dates_per_event = new Object();
       Object.keys(this.evt_types).forEach((key) => {
@@ -500,6 +502,7 @@ class MteCalendar extends PolymerElement {
         this.push("evt_types."+this.cur_event+".dates", _date);
 
         element.prop.push('selected');
+        this.dispatchEvent(new CustomEvent("date_detached", {detail:{which: _date, evt: this.cur_event}}));
       }
     }
 
