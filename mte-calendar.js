@@ -6,7 +6,7 @@ import '@polymer/paper-dropdown-menu/paper-dropdown-menu-light.js';
 import '@polymer/paper-listbox/paper-listbox.js';
 import '@polymer/paper-item/paper-item.js';
 import '@polymer/iron-media-query/iron-media-query.js';
-import '@polymer/iron-localstorage/iron-localstorage.js';
+//import '@polymer/iron-localstorage/iron-localstorage.js';
 
 /**
  * `mte-calendar`
