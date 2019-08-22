@@ -6,6 +6,7 @@ import '@polymer/paper-dropdown-menu/paper-dropdown-menu-light.js';
 import '@polymer/paper-listbox/paper-listbox.js';
 import '@polymer/paper-item/paper-item.js';
 import '@polymer/iron-media-query/iron-media-query.js';
+import '@polymer/iron-localstorage/iron-localstorage.js';
 
 /**
  * `mte-calendar`
@@ -45,7 +46,7 @@ class MteCalendar extends PolymerElement {
         type: Object,
         value() {
           return {
-            selection : { color: "#519aed", min_date: null, max_date: null, restrictWeekdays: true }
+            selection : { color: "#519aed", min_date: '31-december-1979', max_date: '31-december-2030', restrictWeekdays: true }
           };
         }
       },
@@ -66,7 +67,10 @@ class MteCalendar extends PolymerElement {
       displayed_days: {
         type: Object,
         computed: 'getDisplayedDaysObj(selected_month,selected_year,cur_event)'
-      }
+      }/*,
+      localStorage: {
+        type: Object
+      }*/
     };
   }
   
@@ -77,16 +81,28 @@ class MteCalendar extends PolymerElement {
     this.selected_month = today.getMonth();
     this.selected_year = today.getFullYear();
     this.displayCalendarSelection = false;
+    //this.localStorage = window.localStorage;
   }
 
   ready() {
+    // let stored_evts = this.localStorage.getItem('evt_types');
+    // if( stored_evts != null ) {
+    //   this.set('evt_types', JSON.parse(stored_evts))
+    // } else {
+    //   this.localStorage.setItem('evt_types', JSON.stringify(this.evt_types));
+    // }
 
-    let events = Object.keys(this.evt_types);
-    if(events != undefined)
+     let events = Object.keys(this.evt_types);
+     if(events != undefined)
       this.cur_event = events[0];
-    
+
     super.ready();
+    
   }
+
+  // static get observers() {
+  //   return [ 'evtTypesChanged(evt_types.*)' ];
+  // }
 
   static get template() {
     return html`
@@ -345,7 +361,6 @@ class MteCalendar extends PolymerElement {
       <iron-media-query query="(min-width: 768px)" query-matches="{{largeDevice}}"></iron-media-query>
       <div class="calendar">
         <div class="header">
-
           <template is="dom-if" if="[[displayCalendarSelection]]">
             <div class="controls spacer-container">
               <paper-dropdown-menu-light id="month-selector" noink no-animations vertical-offset="60">
@@ -515,6 +530,40 @@ class MteCalendar extends PolymerElement {
     this.displayCalendarSelection = !this.displayCalendarSelection;
   }
 
+  isEmpty() {
+    let keys = Object.keys(this.evt_types);
+    let i = 0;
+    let empty = true;
+    while(i < keys.length && empty)
+    {
+      if(this.evt_types[keys[i]].hasOwnProperty("dates") && this.evt_types[keys[i]].dates.length > 0){
+        empty = false;
+      }
+      i++;
+    }
+    return empty;
+  }
+
+  getValues() {
+    let values = {};
+    this.evt_types_keys.forEach( (evt) => {
+      let _dates = [];
+      if(this.evt_types[evt].hasOwnProperty("dates"))
+      {
+        this.evt_types[evt].dates.forEach( (_time) => {
+          let dateObj = new Date(_time);
+          _dates.push(this.formatDate(dateObj));
+        });
+      }
+      values[evt] = _dates;
+    });
+    return values;
+  }
+
+  // evtTypesChanged(path) {
+  //   this.localStorage.setItem('evt_types', JSON.stringify(this.evt_types));
+  // }
+
   change_month(operation) {
     if(operation == "add")
     {
@@ -576,6 +625,14 @@ class MteCalendar extends PolymerElement {
       value = _date.getTime();
 
     return value;
+  }
+
+  formatDate( _date ) {
+    let year = _date.getFullYear();
+    let month = _date.getMonth() + 1;
+    let day = _date.getDate();
+
+    return year + '/' + ( month < 10? '0':'') + month + '/' + ( day < 10? '0':'') + day;
   }
 
   /**
