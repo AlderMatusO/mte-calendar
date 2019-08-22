@@ -500,6 +500,7 @@ class MteCalendar extends PolymerElement {
       return;
 
     if(evt_index >= 0) {  //  Delete selection of current date
+      this.dispatchEvent(new CustomEvent("before_date_detached", {detail:{which: _date, evt: this.cur_event}}));
       this.splice("evt_types."+this.cur_event+".dates", evt_index, 1);
       let sel_class_index = element.prop.indexOf('selected');
       element.prop.splice(sel_class_index, 1);
@@ -514,6 +515,7 @@ class MteCalendar extends PolymerElement {
         ( this.evt_types[this.cur_event].hasOwnProperty("validation") && this.evt_types[this.cur_event].validation !== undefined &&
           this.evt_types[this.cur_event].validation(_date, dates_per_event) )
       ) {
+        this.dispatchEvent(new CustomEvent("before_date_attached", {detail:{which: _date, evt: this.cur_event}}));
         this.push("evt_types."+this.cur_event+".dates", _date);
 
         element.prop.push('selected');
