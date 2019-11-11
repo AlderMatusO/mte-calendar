@@ -67,6 +67,10 @@ class MteCalendar extends PolymerElement {
       displayed_days: {
         type: Object,
         computed: 'getDisplayedDaysObj(selected_month,selected_year,cur_event)'
+      },
+      showIndicators: {
+        type: Boolean,
+        computed: 'hasIndicators(evt_types)'
       }/*,
       localStorage: {
         type: Object
@@ -407,15 +411,16 @@ class MteCalendar extends PolymerElement {
             </template>
           </div>
         </div>
-
-        <div class="labels-container bordered lefter-container">
-          <template is="dom-repeat" items="[[evt_types_keys]]" as="evt">
-            <div class="label spacer-container">
-              <div class="color-tag bordered" style$="background-color: [[getEventColor(evt)]]"></div>
-              <div class="name-tag">[[evt]]</div>
-            </div>
-          </template>
-        </div>
+        <template is="dom-if" if="[[ showIndicators ]]">
+          <div class="labels-container bordered lefter-container">
+            <template is="dom-repeat" items="[[evt_types_keys]]" as="evt">
+              <div class="label spacer-container">
+                <div class="color-tag bordered" style$="background-color: [[getEventColor(evt)]]"></div>
+                <div class="name-tag">[[evt]]</div>
+              </div>
+            </template>
+          </div>
+        </template>
       </div>
     `;
   }
@@ -465,6 +470,10 @@ class MteCalendar extends PolymerElement {
       _date = _date.DateAdd("d", 1);
     }
     return displayDaysArr;
+  }
+
+  hasIndicators(evt_types) {
+    return ( !evt_types[this.cur_event].hasOwnProperty("indicators") || evt_types[this.cur_event].indicators == 'true' );
   }
 
   _moveForward(eventArgs) {
