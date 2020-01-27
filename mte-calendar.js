@@ -571,30 +571,32 @@ class MteCalendar extends PolymerElement {
     return values;
   }
 
-  clear() {
-    this.evt_types_keys.forEach( (evt) => { 
-      if(this.evt_types[evt].hasOwnProperty("dates")){
-        while(this.evt_types[evt].dates.length > 0) {
-          let _date = this.evt_types[evt].dates[0];
-          this.dispatchEvent(new CustomEvent("before_date_detached", {detail:{which: _date, evt: evt}}));
-          this.splice("evt_types."+ evt +".dates", 0, 1);
-          
-          //looks for the date in the displayed days array
-          let index = this.displayed_days.findIndex((el) => { return el._date == _date; });
-          if(index >= 0)
-          {
-            let element = this.displayed_days[index];
-            let sel_class_index = element.prop.indexOf('selected');
-            element.prop.splice(sel_class_index, 1);
+  clearAll() {
+    this.evt_types_keys.forEach( (evt) => this.clearEvt(evt) );
+  }
 
-            this.set("displayed_days." + index + ".el_color", this.defineElementColor(element));
-            this.set("displayed_days." + index + ".el_classes", this.defineElementClass(element));
-          }
+  clearEvt(evt) { 
+    if(this.evt_types[evt].hasOwnProperty("dates")){
+      while(this.evt_types[evt].dates.length > 0) {
+        let _date = this.evt_types[evt].dates[0];
+        this.dispatchEvent(new CustomEvent("before_date_detached", {detail:{which: _date, evt: evt}}));
+        this.splice("evt_types."+ evt +".dates", 0, 1);
+        
+        //looks for the date in the displayed days array
+        let index = this.displayed_days.findIndex((el) => { return el._date == _date; });
+        if(index >= 0)
+        {
+          let element = this.displayed_days[index];
+          let sel_class_index = element.prop.indexOf('selected');
+          element.prop.splice(sel_class_index, 1);
 
-          this.dispatchEvent(new CustomEvent("date_detached", {detail:{which: _date, evt: evt}}));
+          this.set("displayed_days." + index + ".el_color", this.defineElementColor(element));
+          this.set("displayed_days." + index + ".el_classes", this.defineElementClass(element));
         }
+
+        this.dispatchEvent(new CustomEvent("date_detached", {detail:{which: _date, evt: evt}}));
       }
-    });
+    }
   }
 
   // evtTypesChanged(path) {
