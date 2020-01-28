@@ -6,7 +6,6 @@ import '@polymer/paper-dropdown-menu/paper-dropdown-menu-light.js';
 import '@polymer/paper-listbox/paper-listbox.js';
 import '@polymer/paper-item/paper-item.js';
 import '@polymer/iron-media-query/iron-media-query.js';
-//import '@polymer/iron-localstorage/iron-localstorage.js';
 
 /**
  * `mte-calendar`
@@ -19,6 +18,10 @@ import '@polymer/iron-media-query/iron-media-query.js';
 class MteCalendar extends PolymerElement {
   static get properties() {
     return {
+      readonly: {
+        type: Boolean,
+        value() { return false; }
+      },
       largeDevice: Boolean,
       displayCalendarSelection: Boolean,
       strfiedMonths: {
@@ -71,10 +74,7 @@ class MteCalendar extends PolymerElement {
       showIndicators: {
         type: Boolean,
         computed: 'hasIndicators(evt_types)'
-      }/*,
-      localStorage: {
-        type: Object
-      }*/
+      }
     };
   }
   
@@ -85,28 +85,38 @@ class MteCalendar extends PolymerElement {
     this.selected_month = today.getMonth();
     this.selected_year = today.getFullYear();
     this.displayCalendarSelection = false;
-    //this.localStorage = window.localStorage;
   }
 
   ready() {
-    // let stored_evts = this.localStorage.getItem('evt_types');
-    // if( stored_evts != null ) {
-    //   this.set('evt_types', JSON.parse(stored_evts))
-    // } else {
-    //   this.localStorage.setItem('evt_types', JSON.stringify(this.evt_types));
-    // }
 
      let events = Object.keys(this.evt_types);
      if(events != undefined)
       this.cur_event = events[0];
 
+    if(this.readonly) {
+      let evts = Object.keys(this.evt_types);
+      let min_date = new Date("12-31-9999");
+      //looks for the min date of the event types
+      evts.forEach((evt) => {
+        if(this.evt_types[evt].hasOwnProperty("dates"))
+        {
+          let _dates = this.evt_types[evt].dates;
+          _dates.sort((a,b) => {
+            return a < b? -1 : a > b? 1 : 0; 
+          });
+          if(_dates[0] <= min_date.getTime())
+          min_date = new Date(_dates[0]);
+        }
+      });
+      if(min_date.getTime() < new Date("12-31-9999").getTime()) {
+        this.selected_month = min_date.getMonth();
+        this.selected_year = min_date.getFullYear();
+      }
+    }
+
     super.ready();
     
   }
-
-  // static get observers() {
-  //   return [ 'evtTypesChanged(evt_types.*)' ];
-  // }
 
   static get template() {
     return html`
@@ -441,6 +451,7 @@ class MteCalendar extends PolymerElement {
   getDisplayedDaysObj(month,year,cur_event) {
     let today = new Date();
     today.setHours(0,0,0,0);
+
     let firstDay = new Date(year, month, 1);
     let weekDay = firstDay.getDay();
     let _date = firstDay.DateAdd("d", -weekDay);
@@ -449,9 +460,9 @@ class MteCalendar extends PolymerElement {
     let displayDaysArr = [];
     for(let i=0; i<35; i++) {
       let properties = ['day', 'grid-item', 'center-container'];
-      if( _date.getMonth() != month ||
-      (_date.getTime() < this.parseDate(cur_evt_sel.min_date) || _date.getTime() > this.parseDate(cur_evt_sel.max_date)) ||
-      (cur_evt_sel.restrictWeekdays && (_date.getDay() == 0 || _date.getDay() == 6)))
+      if( !this.readonly && (_date.getMonth() != month ||
+      (_date.getTime() < this.parseDate(cur_evt_sel.min_date) || _date.getTime() > this.parseDate(cur_evt_sel.max_date))) ||
+      (_date.getMonth() != month || (cur_evt_sel.restrictWeekdays && (_date.getDay() == 0 || _date.getDay() == 6))))
         properties.push('disabled');
 
       let color = this.defineElementColor({_date: _date.getTime(), el_classes: properties});
@@ -486,6 +497,9 @@ class MteCalendar extends PolymerElement {
   }
 
   _selectDate(eventArgs) {
+    if(this.readonly)
+      return;
+    
     // Identifies the target element (of class day and grid-item that contains a day-tag element)
     let selection = eventArgs.target;
     if(selection.getAttribute("class").includes("day-tag"))
