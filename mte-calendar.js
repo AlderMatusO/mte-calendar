@@ -575,7 +575,11 @@ class MteCalendar extends PolymerElement {
     this.evt_types_keys.forEach( (evt) => this.clearEvt(evt) );
   }
 
-  clearEvt(evt) { 
+  clearEvt(evt) {
+    // Must throw an exception
+    if(this.evt_types.indexOf(evt) < 0)
+      return;
+
     if(this.evt_types[evt].hasOwnProperty("dates")){
       while(this.evt_types[evt].dates.length > 0) {
         let _date = this.evt_types[evt].dates[0];
@@ -588,7 +592,9 @@ class MteCalendar extends PolymerElement {
         {
           let element = this.displayed_days[index];
           let sel_class_index = element.prop.indexOf('selected');
-          element.prop.splice(sel_class_index, 1);
+
+          if(sel_class_index > 0)
+            element.prop.splice(sel_class_index, 1);
 
           this.set("displayed_days." + index + ".el_color", this.defineElementColor(element));
           this.set("displayed_days." + index + ".el_classes", this.defineElementClass(element));
@@ -598,10 +604,6 @@ class MteCalendar extends PolymerElement {
       }
     }
   }
-
-  // evtTypesChanged(path) {
-  //   this.localStorage.setItem('evt_types', JSON.stringify(this.evt_types));
-  // }
 
   change_month(operation) {
     if(operation == "add")
