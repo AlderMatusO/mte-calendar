@@ -235,9 +235,10 @@ class MteCalendar extends PolymerElement {
         }
 
         #today > .day-tag {
-          border-style: dashed;
-          background-color: var(--calendar-secondary-selection-color);
-          color: white;
+          width: 90%;
+          border-style: solid;
+          border-width: 2px;
+          border-color: var(--calendar-header-bkgnd);
         }
 
         .selected {
