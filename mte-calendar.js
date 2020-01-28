@@ -577,7 +577,7 @@ class MteCalendar extends PolymerElement {
 
   clearEvt(evt) {
     // Must throw an exception
-    if(this.evt_types.indexOf(evt) < 0)
+    if(Object.keys(this.evt_types).indexOf(evt) < 0)
       return;
 
     if(this.evt_types[evt].hasOwnProperty("dates")){
