@@ -18,7 +18,7 @@ import '@polymer/iron-media-query/iron-media-query.js';
 class MteCalendar extends PolymerElement {
   static get properties() {
     return {
-      readonly: {
+      _readonly: {
         type: Boolean,
         value() { return false; }
       },
@@ -55,7 +55,7 @@ class MteCalendar extends PolymerElement {
       },
       evt_types_keys: {
         type: Array,
-        computed: 'getEventTypesKeys(evt_types)'
+        computed: 'getEventTypesKeys()'
       },
       cur_event: {
         type: String,
@@ -85,34 +85,79 @@ class MteCalendar extends PolymerElement {
     this.selected_month = today.getMonth();
     this.selected_year = today.getFullYear();
     this.displayCalendarSelection = false;
+
+    Object.defineProperty(this, "readonly", {
+      get: function() { return this._readonly; }
+    });
   }
 
   ready() {
 
-     let events = Object.keys(this.evt_types);
-     if(events != undefined)
+    let events = Object.keys(this.evt_types);
+    if(events != undefined) {
       this.cur_event = events[0];
+      //Define a _dates property to every event in evt_types Object
+      //to handle getting and setting on the dates array.
+      let $calendar = this;
+      events.forEach((evt) => {
+        Object.defineProperty(this.evt_types[evt], "dates", {
+          get: function() {
+            return this._dates.map((_time) => (new Date(_time)).toCustomFormat());
+          },
+          set: function(datesArr) {
+            if(!Array.isArray(datesArr))
+              return;
+            [...$calendar.evt_types[evt]._dates].forEach((date) => {
+              $calendar.changeEventDate("detach", evt, date);
+            });
 
-    if(this.readonly) {
-      let evts = Object.keys(this.evt_types);
-      let min_date = new Date("12-31-9999");
-      //looks for the min date of the event types
-      evts.forEach((evt) => {
-        if(this.evt_types[evt].hasOwnProperty("dates"))
-        {
-          let _dates = this.evt_types[evt].dates;
-          _dates.sort((a,b) => {
-            return a < b? -1 : a > b? 1 : 0; 
-          });
-          if(_dates[0] <= min_date.getTime())
-          min_date = new Date(_dates[0]);
-        }
+            datesArr.forEach((data) => {
+              var _date;
+              if(Object.prototype.toString.call(data) === '[object Date]') {
+                _date = data.getTime();
+              }
+              if(typeof data === 'string' && Date.parse(data) != NaN) {
+                _date = new Date(data).getTime();
+              }
+              if(typeof data === 'number') {
+                _date = data;
+              }
+              $calendar.changeEventDate("attach", evt, _date);
+            });
+            // If the calendar is set to readonly, it should change the current
+            // displayed month/year to show the min date after changes in event date arrays.
+            if($calendar._readonly) {
+              $calendar.displayMinDate();
+            }
+          }
+        });
+
+        if(!this.evt_types[evt].hasOwnProperty("_dates"))
+          this.evt_types[evt]._dates = [];
       });
-      if(min_date.getTime() < new Date("12-31-9999").getTime()) {
-        this.selected_month = min_date.getMonth();
-        this.selected_year = min_date.getFullYear();
-      }
     }
+    
+    //Sets the curent month and year in readonly mode so
+    //it renders the minimum displayable date (based on the inputs)
+    // if(this.readonly) {
+    //   let min_date = new Date("12-31-9999");
+    //   //looks for the min date of the event types
+    //   events.forEach((evt) => {
+    //     if(this.evt_types[evt].hasOwnProperty("dates"))
+    //     {
+    //       let _dates = this.evt_types[evt]._dates;
+    //       _dates.sort((a,b) => {
+    //         return a < b? -1 : a > b? 1 : 0; 
+    //       });
+    //       if(_dates[0] <= min_date.getTime())
+    //       min_date = new Date(_dates[0]);
+    //     }
+    //   });
+    //   if(min_date.getTime() < new Date("12-31-9999").getTime()) {
+    //     this.selected_month = min_date.getMonth();
+    //     this.selected_year = min_date.getFullYear();
+    //   }
+    // }
 
     super.ready();
     
@@ -440,7 +485,7 @@ class MteCalendar extends PolymerElement {
     return this.strfiedMonths[month] + ' '+ year;
   }
 
-  getEventTypesKeys(evt_types) {
+  getEventTypesKeys() {
     return Object.keys(this.evt_types);
   }
 
@@ -460,7 +505,7 @@ class MteCalendar extends PolymerElement {
     let displayDaysArr = [];
     for(let i=0; i<35; i++) {
       let properties = ['day', 'grid-item', 'center-container'];
-      if( !this.readonly && (_date.getMonth() != month ||
+      if( !this._readonly && (_date.getMonth() != month ||
       (_date.getTime() < this.parseDate(cur_evt_sel.min_date) || _date.getTime() > this.parseDate(cur_evt_sel.max_date))) ||
       (_date.getMonth() != month || (cur_evt_sel.restrictWeekdays && (_date.getDay() == 0 || _date.getDay() == 6))))
         properties.push('disabled');
@@ -497,7 +542,7 @@ class MteCalendar extends PolymerElement {
   }
 
   _selectDate(eventArgs) {
-    if(this.readonly)
+    if(this._readonly)
       return;
     
     // Identifies the target element (of class day and grid-item that contains a day-tag element)
@@ -507,49 +552,34 @@ class MteCalendar extends PolymerElement {
     
     // Gets the date from the aria-label attribute (Time string format) and uses it to filter the corresponding entry in the array of displayable items
     let _date = parseInt(selection.getAttribute("aria-label"));
-    
-    let index = this.displayed_days.findIndex((el) => { return el._date == _date; })
-    let element = this.displayed_days[index];
+
+    let element = this.displayed_days.find((el) => { return el._date == _date; });
     //  Gets the index in the current event's array
-    let evt_index = -1;
-    if(!this.evt_types[this.cur_event].hasOwnProperty("dates"))
-      this.evt_types[this.cur_event].dates = [];
-    else
-      evt_index = this.evt_types[this.cur_event].dates.indexOf(_date);
+    let evt_index = this.evt_types[this.cur_event]._dates.indexOf(_date);
 
     // Does nothing if the element is disabled, if it's selected but not for the current event or
     // if the whole component was put in calendar selection mode.
-    if(element.el_classes.includes('disabled') ||
-    (element.el_classes.includes('selected') && evt_index < 0) || this.displayCalendarSelection)
+    if(element !== undefined && (element.el_classes.includes('disabled') ||
+    (element.el_classes.includes('selected') && evt_index < 0) || this.displayCalendarSelection))
       return;
 
     if(evt_index >= 0) {  //  Delete selection of current date
-      this.dispatchEvent(new CustomEvent("before_date_detached", {detail:{which: _date, evt: this.cur_event}}));
-      this.splice("evt_types."+this.cur_event+".dates", evt_index, 1);
-      let sel_class_index = element.prop.indexOf('selected');
-      element.prop.splice(sel_class_index, 1);
 
-      this.dispatchEvent(new CustomEvent("date_detached", {detail:{which: _date, evt: this.cur_event}}));
+      this.changeEventDate("detach", this.cur_event, _date);
+
     } else {  //  Add selection of current date
       var dates_per_event = new Object();
-      Object.keys(this.evt_types).forEach((key) => {
-        dates_per_event[key] = (this.evt_types[key].hasOwnProperty("dates")? this.evt_types[key].dates : []);
+      this.evt_types_keys.forEach((key) => {
+        dates_per_event[key] = this.evt_types[key]._dates;
       });
       if(!this.evt_types[this.cur_event].hasOwnProperty("validation") || this.evt_types[this.cur_event].validation === undefined ||
         ( this.evt_types[this.cur_event].hasOwnProperty("validation") && this.evt_types[this.cur_event].validation !== undefined &&
           this.evt_types[this.cur_event].validation(_date, dates_per_event) )
       ) {
-        this.dispatchEvent(new CustomEvent("before_date_attached", {detail:{which: _date, evt: this.cur_event}}));
-        this.push("evt_types."+this.cur_event+".dates", _date);
-
-        element.prop.push('selected');
-        this.dispatchEvent(new CustomEvent("date_attached", {detail:{which: _date, evt: this.cur_event}}));
+        this.changeEventDate("attach", this.cur_event, _date);
       }
     }
-
-    this.set("displayed_days."+index+".el_color", this.defineElementColor(element));
-    this.set("displayed_days."+index+".el_classes", this.defineElementClass(element));
-
+    
   }
 
   _toggleCalendarSelection(eventArgs) {
@@ -562,7 +592,7 @@ class MteCalendar extends PolymerElement {
     let empty = true;
     while(i < keys.length && empty)
     {
-      if(this.evt_types[keys[i]].hasOwnProperty("dates") && this.evt_types[keys[i]].dates.length > 0){
+      if(this.evt_types[keys[i]]._dates.length > 0){
         empty = false;
       }
       i++;
@@ -573,15 +603,7 @@ class MteCalendar extends PolymerElement {
   getValues() {
     let values = {};
     this.evt_types_keys.forEach( (evt) => {
-      let _dates = [];
-      if(this.evt_types[evt].hasOwnProperty("dates"))
-      {
-        this.evt_types[evt].dates.forEach( (_time) => {
-          let dateObj = new Date(_time);
-          _dates.push(this.formatDate(dateObj));
-        });
-      }
-      values[evt] = _dates;
+      values[evt] = this.evt_types[evt]._dates;
     });
     return values;
   }
@@ -595,28 +617,9 @@ class MteCalendar extends PolymerElement {
     if(Object.keys(this.evt_types).indexOf(evt) < 0)
       return;
 
-    if(this.evt_types[evt].hasOwnProperty("dates")){
-      while(this.evt_types[evt].dates.length > 0) {
-        let _date = this.evt_types[evt].dates[0];
-        this.dispatchEvent(new CustomEvent("before_date_detached", {detail:{which: _date, evt: evt}}));
-        this.splice("evt_types."+ evt +".dates", 0, 1);
-        
-        //looks for the date in the displayed days array
-        let index = this.displayed_days.findIndex((el) => { return el._date == _date; });
-        if(index >= 0)
-        {
-          let element = this.displayed_days[index];
-          let sel_class_index = element.prop.indexOf('selected');
-
-          if(sel_class_index > 0)
-            element.prop.splice(sel_class_index, 1);
-
-          this.set("displayed_days." + index + ".el_color", this.defineElementColor(element));
-          this.set("displayed_days." + index + ".el_classes", this.defineElementClass(element));
-        }
-
-        this.dispatchEvent(new CustomEvent("date_detached", {detail:{which: _date, evt: evt}}));
-      }
+    while(this.evt_types[evt]._dates.length > 0) {
+      let _date = this.evt_types[evt]._dates[0];
+      this.changeEventDate("detach", evt, _date);
     }
   }
 
@@ -683,12 +686,57 @@ class MteCalendar extends PolymerElement {
     return value;
   }
 
-  formatDate( _date ) {
-    let year = _date.getFullYear();
-    let month = _date.getMonth() + 1;
-    let day = _date.getDate();
+  displayMinDate() {
+    let $evts = this.evt_types;
+    //looks for the min date of the event types
+    let _date = this.evt_types_keys.reduce( (min_date, evt) => {
+      let _dates = $evts[evt]._dates;
+      if(_dates.length == 0)
+        return min_date;
+      
+      _dates.sort((a,b) => {
+        return a < b? -1 : a > b? 1 : 0; 
+      });
 
-    return year + '/' + ( month < 10? '0':'') + month + '/' + ( day < 10? '0':'') + day;
+      if(_dates[0] <= min_date.getTime())
+        return new Date(_dates[0]);
+      else
+        return min_date;
+    }, new Date("12-31-9999"));
+
+    if(_date.getTime() < new Date("12-31-9999").getTime()) {
+      this.selected_month = _date.getMonth();
+      this.selected_year = _date.getFullYear();
+    }
+  }
+
+  changeEventDate(action, event, date) {
+    let el = this.displayed_days.find((e) => e._date === date);
+    if(action == "attach") {
+      this.dispatchEvent(new CustomEvent("before_date_attached", {detail:{which: date, evt: event}}));
+      this.push("evt_types."+event+"._dates", date);
+      if(el !== undefined)
+        el.prop.push('selected');
+      this.dispatchEvent(new CustomEvent("date_attached", {detail:{which: date, evt: event}}));
+    }
+    else { //action == "detach"
+      let evt_index = this.evt_types[event]._dates.indexOf(date);
+      this.dispatchEvent(new CustomEvent("before_date_detached", {detail:{which: date, evt: event}}));
+      this.splice("evt_types." + event + "._dates", evt_index, 1);
+
+      if(el !== undefined) {
+        let sel_class_index = el.prop.indexOf('selected');
+        if(sel_class_index > 0)
+          el.prop.splice(sel_class_index, 1);
+      }
+
+      this.dispatchEvent(new CustomEvent("date_detached", {detail:{which: date, evt: event}}));
+    }
+    if(el !== undefined) {
+      let index = this.displayed_days.findIndex(item => item._date == date);
+      this.set("displayed_days."+ index +".el_color", this.defineElementColor(el));
+      this.set("displayed_days."+ index +".el_classes", this.defineElementClass(el));
+    }
   }
 
   /**
@@ -701,8 +749,7 @@ class MteCalendar extends PolymerElement {
     while(value === undefined && i < keys.length)
     {
       let key = keys[i];
-      if(this.evt_types[key].hasOwnProperty("dates") &&
-        this.evt_types[key].dates.includes(_date)) {
+      if(this.evt_types[key]._dates.includes(_date)) {
         value = key;
       }
       i++;
@@ -710,6 +757,18 @@ class MteCalendar extends PolymerElement {
     return value;
   }
 }
+
+Object.defineProperty(Date.prototype, "toCustomFormat", {
+  value: function toCustomFormat() {
+    let year = this.getFullYear();
+    let month = this.getMonth() + 1;
+    let day = this.getDate();
+
+    return year + '/' + ( month < 10? '0':'') + month + '/' + ( day < 10? '0':'') + day;
+  },
+  writable: true,
+  configurable: true
+});
 
 Object.defineProperty(Date.prototype, "DateAdd", {
   value: function DateAdd(interval, num) {
