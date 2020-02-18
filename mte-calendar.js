@@ -603,7 +603,7 @@ class MteCalendar extends PolymerElement {
   getValues() {
     let values = {};
     this.evt_types_keys.forEach( (evt) => {
-      values[evt] = this.evt_types[evt]._dates;
+      values[evt] = this.evt_types[evt]._dates.map(datetime => new Date(datetime).toCustomFormat());
     });
     return values;
   }
