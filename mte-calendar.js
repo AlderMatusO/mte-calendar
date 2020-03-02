@@ -1,4 +1,5 @@
 import {html, PolymerElement} from '@polymer/polymer/polymer-element.js';
+import './custom/components/day-item.js';
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-input/paper-input.js'
 import '@polymer/paper-button/paper-button.js';
@@ -108,7 +109,7 @@ class MteCalendar extends PolymerElement {
             if(!Array.isArray(datesArr))
               return;
             [...$calendar.evt_types[evt]._dates].forEach((date) => {
-              $calendar.changeEventDate("detach", evt, date);
+              $calendar.deselectEventDate(evt, date);
             });
 
             datesArr.forEach((data) => {
@@ -122,7 +123,7 @@ class MteCalendar extends PolymerElement {
               if(typeof data === 'number') {
                 _date = data;
               }
-              $calendar.changeEventDate("attach", evt, _date);
+              $calendar.selectEventDate(evt, _date);
             });
             // If the calendar is set to readonly, it should change the current
             // displayed month/year to show the min date after changes in event date arrays.
@@ -136,28 +137,6 @@ class MteCalendar extends PolymerElement {
           this.evt_types[evt]._dates = [];
       });
     }
-    
-    //Sets the curent month and year in readonly mode so
-    //it renders the minimum displayable date (based on the inputs)
-    // if(this.readonly) {
-    //   let min_date = new Date("12-31-9999");
-    //   //looks for the min date of the event types
-    //   events.forEach((evt) => {
-    //     if(this.evt_types[evt].hasOwnProperty("dates"))
-    //     {
-    //       let _dates = this.evt_types[evt]._dates;
-    //       _dates.sort((a,b) => {
-    //         return a < b? -1 : a > b? 1 : 0; 
-    //       });
-    //       if(_dates[0] <= min_date.getTime())
-    //       min_date = new Date(_dates[0]);
-    //     }
-    //   });
-    //   if(min_date.getTime() < new Date("12-31-9999").getTime()) {
-    //     this.selected_month = min_date.getMonth();
-    //     this.selected_year = min_date.getFullYear();
-    //   }
-    // }
 
     super.ready();
     
@@ -262,44 +241,7 @@ class MteCalendar extends PolymerElement {
           font-size: 8px;
           font-weight: bold;
         }
-
-        .day {
-          border-style: ridge;
-          border-width: 0.7px;
-        }
-        .day-tag {
-          width: 35px;
-          height: 35px;
-          border-radius: 50%;
-          border-style: none;
-          border-width: 1px;
-          font-size: 18px;
-        }
         
-        .day:not(.disabled) {
-          cursor: pointer;
-        }
-
-        .day:not(.disabled):not(.selected):hover {
-          background-color: whitesmoke;
-        }
-
-        .disabled {
-          background-color: var(--calendar-disabled-color);
-          color: var(--calendar-disabled-forecolor);
-        }
-
-        #today > .day-tag {
-          width: 90%;
-          border-style: solid;
-          border-width: 2px;
-          border-color: var(--calendar-header-bkgnd);
-        }
-
-        .selected {
-          color: white;
-        }
-
         .bordered {
           border-style: solid;
           border-width: 0.7px;
@@ -398,11 +340,6 @@ class MteCalendar extends PolymerElement {
             font-size: 24px;
           }
 
-          .day {
-            font-size: 20px;
-            height: 50px;
-          }
-
           .tag {
             font-size: 12px;
             height: 25px;
@@ -460,10 +397,11 @@ class MteCalendar extends PolymerElement {
               </div>
             </template>
             <template is="dom-repeat" items="[[displayed_days]]" as="displayed_day">
-              <div id="[[displayed_day.el_id]]" class$="[[displayed_day.el_classes]]"
-                style$="[[displayed_day.el_color]]" on-tap="_selectDate" aria-label$="[[displayed_day._date]]">
-                <div class="day-tag center-container">[[displayed_day.n_day]]</div>
-              </div>
+              <day-item date="[[displayed_day.date]]"
+                selected="[[displayed_day.isSelected]]"
+                disabled="[[displayed_day.isDisabled]]"
+                color="[[displayed_day.color]]"
+                on-select="_selectDate"></day-item>
             </template>
           </div>
         </div>
@@ -504,28 +442,30 @@ class MteCalendar extends PolymerElement {
 
     let displayDaysArr = [];
     for(let i=0; i<35; i++) {
-      let properties = ['day', 'grid-item', 'center-container'];
+      let item = {
+        date: _date.getTime(),
+        isSelected: false,
+        isDisabled: false,
+        color: "",
+      };
+
+      let evt_in_date = this.evtLookUp(_date);
+
+      if(evt_in_date)
+        item.color = this.evt_types[evt_in_date].color;
+
       if( !this._readonly && (_date.getMonth() != month ||
       (_date.getTime() < this.parseDate(cur_evt_sel.min_date) || _date.getTime() > this.parseDate(cur_evt_sel.max_date))) ||
       (_date.getMonth() != month || (cur_evt_sel.restrictWeekdays && (_date.getDay() == 0 || _date.getDay() == 6))))
-        properties.push('disabled');
-
-      let color = this.defineElementColor({_date: _date.getTime(), el_classes: properties});
-      if(color != "" && !properties.includes('disabled'))
-        properties.push('selected');
+        item.isDisabled = true;
       
-      let element = {
-        n_day : _date.getDate(),
-        _date : _date.getTime(),
-        prop : properties,
-        el_id: (today.getTime() === _date.getTime())? "today" : "",
-        el_classes : this.defineElementClass({prop: properties}),
-        el_color: color
-      };
+      if(item.color != "" && !item.isDisabled)
+        item.isSelected = true;
 
-      displayDaysArr.push(element);
+      displayDaysArr = [...displayDaysArr, item];
       _date = _date.DateAdd("d", 1);
     }
+
     return displayDaysArr;
   }
 
@@ -545,27 +485,21 @@ class MteCalendar extends PolymerElement {
     if(this._readonly)
       return;
     
-    // Identifies the target element (of class day and grid-item that contains a day-tag element)
-    let selection = eventArgs.target;
-    if(selection.getAttribute("class").includes("day-tag"))
-      selection = selection.parentNode;
-    
-    // Gets the date from the aria-label attribute (Time string format) and uses it to filter the corresponding entry in the array of displayable items
-    let _date = parseInt(selection.getAttribute("aria-label"));
+    let _date = eventArgs.detail.date;
 
-    let element = this.displayed_days.find((el) => { return el._date == _date; });
+    let element = this.displayed_days.find((el) => { return el.date == _date; });
     //  Gets the index in the current event's array
     let evt_index = this.evt_types[this.cur_event]._dates.indexOf(_date);
 
     // Does nothing if the element is disabled, if it's selected but not for the current event or
     // if the whole component was put in calendar selection mode.
-    if(element !== undefined && (element.el_classes.includes('disabled') ||
-    (element.el_classes.includes('selected') && evt_index < 0) || this.displayCalendarSelection))
+    if(element !== undefined && (element.isDisabled ||
+    (element.selected && evt_index < 0) || this.displayCalendarSelection))
       return;
 
     if(evt_index >= 0) {  //  Delete selection of current date
 
-      this.changeEventDate("detach", this.cur_event, _date);
+      this.deselectEventDate(this.cur_event, _date);
 
     } else {  //  Add selection of current date
       var dates_per_event = new Object();
@@ -576,7 +510,7 @@ class MteCalendar extends PolymerElement {
         ( this.evt_types[this.cur_event].hasOwnProperty("validation") && this.evt_types[this.cur_event].validation !== undefined &&
           this.evt_types[this.cur_event].validation(_date, dates_per_event) )
       ) {
-        this.changeEventDate("attach", this.cur_event, _date);
+        this.selectEventDate(this.cur_event, _date);
       }
     }
     
@@ -619,7 +553,7 @@ class MteCalendar extends PolymerElement {
 
     while(this.evt_types[evt]._dates.length > 0) {
       let _date = this.evt_types[evt]._dates[0];
-      this.changeEventDate("detach", evt, _date);
+      this.deselectEventDate(evt, _date);
     }
   }
 
@@ -650,25 +584,6 @@ class MteCalendar extends PolymerElement {
 
   defineWeekdayDisabled(weekday) {
       return weekday > 0 && weekday < 6? "" : " disabled";
-  }
-
-  defineElementClass(element) {
-    return element.prop.join(" ");
-  }
-
-  defineElementColor(element) {
-    let _date = element._date;
-
-    let evt_in_date = this.evtLookUp(_date);
-
-    let color = "";
-    if(evt_in_date) {
-      //only displays one event per day atm
-      color = "background-color: " + this.evt_types[evt_in_date].color + ";";
-      if(element.el_classes.includes('disabled'))
-        color += " opacity: 0.6;";
-    }
-    return color;
   }
   
   parseDate(str) {
@@ -711,12 +626,16 @@ class MteCalendar extends PolymerElement {
   }
 
   changeEventDate(action, event, date) {
-    let el = this.displayed_days.find((e) => e._date === date);
+    let el_index = this.displayed_days.findIndex((e) => e.date === date);
+
     if(action == "attach") {
       this.dispatchEvent(new CustomEvent("before_date_attached", {detail:{which: date, evt: event}}));
       this.push("evt_types."+event+"._dates", date);
-      if(el !== undefined)
-        el.prop.push('selected');
+      if(el_index >= 0) {
+        this.set("displayed_days."+el_index+".color", this.evt_types[event].color);
+        this.set("displayed_days."+el_index+".isSelected", true);
+      }
+
       this.dispatchEvent(new CustomEvent("date_attached", {detail:{which: date, evt: event}}));
     }
     else { //action == "detach"
@@ -724,19 +643,42 @@ class MteCalendar extends PolymerElement {
       this.dispatchEvent(new CustomEvent("before_date_detached", {detail:{which: date, evt: event}}));
       this.splice("evt_types." + event + "._dates", evt_index, 1);
 
-      if(el !== undefined) {
-        let sel_class_index = el.prop.indexOf('selected');
-        if(sel_class_index > 0)
-          el.prop.splice(sel_class_index, 1);
+      if(el_index >= 0) {
+        this.set("displayed_days."+el_index+".color", "");
+        this.set("displayed_days."+el_index+".isSelected", false);
       }
 
       this.dispatchEvent(new CustomEvent("date_detached", {detail:{which: date, evt: event}}));
     }
-    if(el !== undefined) {
-      let index = this.displayed_days.findIndex(item => item._date == date);
-      this.set("displayed_days."+ index +".el_color", this.defineElementColor(el));
-      this.set("displayed_days."+ index +".el_classes", this.defineElementClass(el));
-    }
+  }
+
+  selectEventDate(event, date) {
+    
+    this.dispatchEvent(new CustomEvent("before_date_attached", {detail:{which: date, evt: event}}));
+      this.push("evt_types."+event+"._dates", date);
+      
+      this.setDateProperties(date, this.evt_types[event].color, true);
+
+      this.dispatchEvent(new CustomEvent("date_attached", {detail:{which: date, evt: event}}));
+  }
+
+  deselectEventDate(event, date) {
+    
+    let evt_index = this.evt_types[event]._dates.indexOf(date);
+      this.dispatchEvent(new CustomEvent("before_date_detached", {detail:{which: date, evt: event}}));
+      this.splice("evt_types." + event + "._dates", evt_index, 1);
+
+      this.setDateProperties(date, "", false);
+
+      this.dispatchEvent(new CustomEvent("date_detached", {detail:{which: date, evt: event}}));
+  }
+
+  setDateProperties(date, color, isSelected) {
+    let el_index = this.displayed_days.findIndex((e) => e.date === date);
+      if(el_index >= 0) {
+        this.set("displayed_days."+el_index+".color", color);
+        this.set("displayed_days."+el_index+".isSelected", isSelected);
+      }
   }
 
   /**
@@ -749,7 +691,7 @@ class MteCalendar extends PolymerElement {
     while(value === undefined && i < keys.length)
     {
       let key = keys[i];
-      if(this.evt_types[key]._dates.includes(_date)) {
+      if(this.evt_types[key]._dates.includes(_date.getTime())) {
         value = key;
       }
       i++;
