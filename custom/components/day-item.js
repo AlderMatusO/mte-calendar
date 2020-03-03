@@ -1,5 +1,5 @@
 import {html, PolymerElement} from '@polymer/polymer/polymer-element.js';
-import { Holidays } from '../services/holidays';
+import { Holidays } from '../services/holidays.js';
 
 class DayItem extends PolymerElement {
     
@@ -149,7 +149,7 @@ class DayItem extends PolymerElement {
             <div id="[[element.id]]" class$="[[classes]]"
                 style$="[[element.style]]" on-tap="_selectDate" aria-label$="[[date]]">
                 
-                <div class="day-tag center-container" style="background-image: url('/{{holiday.icon}}');">[[element.number]]</div>
+                <div class="day-tag center-container" style="background-image: url('{{holiday.icon}}');">[[element.number]]</div>
                 <template is="dom-if" if="[[ holiday ]]">
                     <span class="tooltip">{{ holiday.note }}</span>
                 </template>
@@ -170,10 +170,6 @@ class DayItem extends PolymerElement {
         this.set("element.style", this.getElementStyle());
     }
 
-    _serviceChanged(newVal, oldVal) {
-        console.log("service changed to: "+newVal);
-    }
-
     defineElement() {
         let today = new Date();
         today.setHours(0,0,0,0);
@@ -181,7 +177,7 @@ class DayItem extends PolymerElement {
         this.holiday = this.hdService.getHolidayByDate(this.date);
         if(this.holiday) {
             this.disabled = true;
-            console.log(this.holiday);
+            this.holiday.icon = this.resolveUrl(this.holiday.icon);
         }
         
         this.element = {
