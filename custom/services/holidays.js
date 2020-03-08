@@ -1,3 +1,4 @@
+
 export class Holidays {
 
     static get Instance() {
@@ -11,7 +12,7 @@ export class Holidays {
             month: 1,
             day: 1,
             longWeekend: false,
-            icon: '/assets/images/new_yr_icon.png'
+            icon: "new_year"
         },
         {
             name: 'Día de la Constitución Mexicana',
@@ -48,7 +49,7 @@ export class Holidays {
             month: 12,
             day: 25,
             longWeekend: false,
-            icon: '/assets/images/christmas_icon.png'
+            icon: "christmas"
         }];
 
         this.monthsNames = [ "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
@@ -63,7 +64,7 @@ export class Holidays {
                 let daysToMonday =  1 - (_date.getDay());
                 _date = _date.DateAdd("d", daysToMonday);
             }
-            holiday.icon = (holiday.hasOwnProperty('icon')? holiday.icon : '/assets/images/mx_coat_of_arms_icon.png');
+            holiday.icon = (holiday.hasOwnProperty('icon')? holiday.icon : "mexican");
             holiday.celebOn = _date.toCustomFormat();
             holiday.note = "(" + this.getOrdinal(holiday.day) + " de " + this.monthsNames[holiday.month-1] + ") "+ holiday.name + ".";
             return holiday;

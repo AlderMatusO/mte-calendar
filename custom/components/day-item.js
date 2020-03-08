@@ -1,5 +1,8 @@
 import {html, PolymerElement} from '@polymer/polymer/polymer-element.js';
 import { Holidays } from '../services/holidays.js';
+import { christmasCSS } from '../../assets/icons/christmas_icon.js';
+import { mx_coatCSS } from '../../assets/icons/mx_coat_icon.js';
+import { new_yrCSS } from '../../assets/icons/new_yr_icon.js';
 
 class DayItem extends PolymerElement {
     
@@ -86,12 +89,15 @@ class DayItem extends PolymerElement {
                 }
 
                 .holiday > .day-tag {
-                    /* Background image to be set */
-                    background-position: center;
-                    background-repeat: no-repeat;
-                    background-size: contain;
                     color: transparent;
                 }
+
+                ${ christmasCSS }
+                
+                ${ mx_coatCSS }
+
+                ${ new_yrCSS }
+                
                 .holiday .tooltip::after {
                     content: "";
                     position: absolute;
@@ -102,6 +108,7 @@ class DayItem extends PolymerElement {
                     border-style: solid;
                     border-color: transparent transparent black transparent;
                 }
+
                 .holiday .tooltip {
                     font-size: 10px;
                     visibility: hidden;
@@ -118,9 +125,11 @@ class DayItem extends PolymerElement {
                     margin-left: -60px;
                     z-index: 1;
                 }
+
                 .holiday:hover .tooltip {
                     visibility: visible;
                 }
+
                 #today > .day-tag {
                     width: 90%;
                     border-style: solid;
@@ -136,7 +145,7 @@ class DayItem extends PolymerElement {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                  }
+                }
                 
                 @media(min-width: 425px)
                 {
@@ -149,7 +158,7 @@ class DayItem extends PolymerElement {
             <div id="[[element.id]]" class$="[[classes]]"
                 style$="[[element.style]]" on-tap="_selectDate" aria-label$="[[date]]">
                 
-                <div class="day-tag center-container" style="background-image: url('{{holiday.icon}}');">[[element.number]]</div>
+                <div class="day-tag center-container">[[element.number]]</div>
                 <template is="dom-if" if="[[ holiday ]]">
                     <span class="tooltip">{{ holiday.note }}</span>
                 </template>
@@ -177,7 +186,6 @@ class DayItem extends PolymerElement {
         this.holiday = this.hdService.getHolidayByDate(this.date);
         if(this.holiday) {
             this.disabled = true;
-            this.holiday.icon = this.resolveUrl(this.holiday.icon);
         }
         
         this.element = {
@@ -194,8 +202,10 @@ class DayItem extends PolymerElement {
             classArr = [...classArr, 'disabled'];
         if(this.selected)
             classArr = [...classArr, 'selected'];
-        if(this.holiday)
+        if(this.holiday){
             classArr = [...classArr, 'holiday'];
+            classArr = [...classArr, this.holiday.icon];
+        }
 
         return classArr;
     }
