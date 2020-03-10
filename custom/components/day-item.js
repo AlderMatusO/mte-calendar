@@ -184,9 +184,6 @@ class DayItem extends PolymerElement {
         today.setHours(0,0,0,0);
         let date = new Date(this.date);
         this.holiday = this.hdService.getHolidayByDate(this.date);
-        if(this.holiday) {
-            this.disabled = true;
-        }
         
         this.element = {
             id: (today.getTime() === this.date? "today" : ""),
@@ -198,14 +195,16 @@ class DayItem extends PolymerElement {
     
     getElementClassArr() {
         let classArr = ['day', 'grid-item', 'center-container'];
-        if(this.disabled)
-            classArr = [...classArr, 'disabled'];
-        if(this.selected)
-            classArr = [...classArr, 'selected'];
         if(this.holiday){
             classArr = [...classArr, 'holiday'];
             classArr = [...classArr, this.holiday.icon];
+            this.disabled = true;
         }
+        
+        if(this.selected)
+            classArr = [...classArr, 'selected'];
+        if(this.disabled)
+            classArr = [...classArr, 'disabled'];
 
         return classArr;
     }
