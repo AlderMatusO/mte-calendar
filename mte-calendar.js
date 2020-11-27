@@ -457,8 +457,10 @@ class MteCalendar extends PolymerElement {
       if( !this._readonly && (_date.getMonth() != month ||
       (_date.getTime() < this.parseDate(cur_evt_sel.min_date) || _date.getTime() > this.parseDate(cur_evt_sel.max_date))) ||
       (_date.getMonth() != month || (cur_evt_sel.restrictWeekdays && (_date.getDay() == 0 || _date.getDay() == 6))))
+      {
         item.isDisabled = true;
-      
+      }
+
       if(item.color != "" && !item.isDisabled)
         item.isSelected = true;
 

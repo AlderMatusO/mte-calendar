@@ -44,9 +44,6 @@ class DayItem extends PolymerElement {
 
     constructor() {
         super();
-        this.selected = false;
-        this.disabled = false;
-        this.color = "";
         this.element = { };
         this.hdService = Holidays.Instance;
     }
@@ -175,6 +172,9 @@ class DayItem extends PolymerElement {
     }
 
     _disabledChanged() {
+        let date = new Date(this.date);
+        if(date.getDate()== 14)
+            console.log(this.disabled? 'T' : 'F');
         this.set("element.classArr", this.getElementClassArr());
         this.set("element.style", this.getElementStyle());
     }
@@ -184,6 +184,7 @@ class DayItem extends PolymerElement {
         today.setHours(0,0,0,0);
         let date = new Date(this.date);
         this.holiday = this.hdService.getHolidayByDate(this.date);
+        
         
         this.element = {
             id: (today.getTime() === this.date? "today" : ""),
@@ -195,16 +196,17 @@ class DayItem extends PolymerElement {
     
     getElementClassArr() {
         let classArr = ['day', 'grid-item', 'center-container'];
-        if(this.holiday){
+        if(this.holiday !== undefined){
             classArr = [...classArr, 'holiday'];
             classArr = [...classArr, this.holiday.icon];
-            this.disabled = true;
+            classArr = [...classArr, 'disabled'];
         }
         
         if(this.selected)
             classArr = [...classArr, 'selected'];
-        if(this.disabled)
+        if(this.disabled) {
             classArr = [...classArr, 'disabled'];
+        }
 
         return classArr;
     }
